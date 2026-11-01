@@ -1,0 +1,21 @@
+{
+  "name": "chronicles-of-veyra-shattered-eclipse",
+  "version": "1.0.0",
+  "description": "Chronicles of Veyra: The Shattered Eclipse — A publish-ready 2D action-platformer and Metroidvania with an extensive 5-act story, branching choices, skill tree, multi-phase bosses, procedural WebAudio soundtrack, and built-in level editor.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "node scripts/verify.js"
+  },
+  "keywords": [
+    "2d-platformer",
+    "metroidvania",
+    "action-rpg",
+    "html5-canvas",
+    "game",
+    "indie-game"
+  ],
+  "author": "Aethelgard Studios",
+  "license": "MIT"
+}

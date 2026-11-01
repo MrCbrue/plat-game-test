@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chronicles of Veyra: The Shattered Eclipse</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="assets/icon.svg" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <div id="app-viewport">
+    <!-- Primary 2D Game Canvas (1280x720 logical resolution) -->
+    <canvas id="game-canvas" width="1280" height="720"></canvas>
+
+    <!-- =================================================================== -->
+    <!-- TITLE SCREEN OVERLAY                                                -->
+    <!-- =================================================================== -->
+    <div id="title-screen" class="overlay-screen">
+      <div class="title-hero">
+        <img src="assets/icon.svg" alt="Veyra Crest" class="title-crest" />
+        <div class="title-eyebrow">AETHELGARD STUDIOS PRESENTS</div>
+        <h1 class="title-main">CHRONICLES OF VEYRA</h1>
+        <h2 class="title-sub">THE SHATTERED ECLIPSE</h2>
+        <p class="title-tagline">
+          Awaken as Kaelen, the last Duskblade Sentinel. Reclaim the five Eclipse Shards across a fallen kingdom, master blade and arcane arts, and decide the fate of Veyra.
+        </p>
+
+        <div class="title-menu-buttons">
+          <button id="btn-play-campaign" class="btn-primary-gold">⚔️ Play Story Campaign</button>
+          <button id="btn-boss-rush" class="btn-secondary">🏆 Astral Crucible (Boss Rush)</button>
+          <button id="btn-level-editor" class="btn-secondary">🧱 World Architect (Level Editor)</button>
+          <div class="title-sub-row">
+            <button id="btn-replay-prologue" class="btn-small btn-outline">🎬 Prologue</button>
+            <button id="btn-open-achievements" class="btn-small btn-outline">🏅 Achievements</button>
+            <button id="btn-open-settings" class="btn-small btn-outline">⚙️ Settings</button>
+            <button id="btn-open-credits" class="btn-small btn-outline">📜 Credits</button>
+          </div>
+        </div>
+
+        <div class="title-controls-bar">
+          <span><strong>Move:</strong> A/D or Arrows</span>
+          <span><strong>Jump / Double Jump:</strong> W / Space / Z</span>
+          <span><strong>Attack:</strong> J / Left-Click</span>
+          <span><strong>Parry:</strong> F / Right-Click</span>
+          <span><strong>Dash:</strong> K / Shift</span>
+          <span><strong>Grapple:</strong> L / G</span>
+          <span><strong>Spells:</strong> Q / E / R</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- SAVE SLOTS & DIFFICULTY MODAL                                       -->
+    <!-- =================================================================== -->
+    <div id="save-slots-modal" class="modal-backdrop hidden">
+      <div class="modal-window">
+        <div class="modal-header">
+          <h3>📖 Select Chronicle Save Slot</h3>
+          <div class="difficulty-picker">
+            <label for="difficulty-select">Combat Difficulty:</label>
+            <select id="difficulty-select">
+              <option value="story">Story / Explorer (60% Enemy Damage)</option>
+              <option value="normal" selected>Sentinel Standard (Balanced)</option>
+              <option value="heroic">Eclipse Heroic (135% Enemy Damage)</option>
+            </select>
+          </div>
+          <button class="btn-close" onclick="document.getElementById('save-slots-modal').classList.add('hidden')">✕</button>
+        </div>
+        <div id="save-slots-list" class="save-slots-container"></div>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- LIVE GAMEPLAY HUD                                                   -->
+    <!-- =================================================================== -->
+    <div id="game-hud" class="hidden">
+      <!-- Top-Left: Vitals, Mana, XP, Level, Shards & Elixirs -->
+      <div class="hud-top-left">
+        <div class="hud-level-row">
+          <span id="hud-level" class="hud-badge-gold">Lv.1</span>
+          <span id="hud-sp-badge" class="hud-badge-sp hidden">+1 SP</span>
+          <div class="hud-currency">
+            <span title="Aether Shards">💎 <strong id="hud-shards">40</strong></span>
+            <span title="Crimson Elixirs [Press H]">🧪 <strong id="hud-elixirs">3/3</strong> <small>[H]</small></span>
+          </div>
+        </div>
+
+        <div class="hud-bar-group">
+          <div class="hud-bar-track hp-track">
+            <div id="hud-hp-fill" class="hud-bar-fill hp-fill" style="width: 100%"></div>
+            <span id="hud-hp-text" class="hud-bar-label">100 / 100</span>
+          </div>
+          <div class="hud-bar-track mana-track">
+            <div id="hud-mana-fill" class="hud-bar-fill mana-fill" style="width: 100%"></div>
+            <span id="hud-mana-text" class="hud-bar-label">100 / 100</span>
+          </div>
+          <div class="hud-bar-track xp-track" title="Sentinel Experience">
+            <div id="hud-xp-fill" class="hud-bar-fill xp-fill" style="width: 0%"></div>
+          </div>
+        </div>
+
+        <div class="hud-spells-row">
+          <div class="spell-pill"><strong>[Q]</strong> Eclipse Lance</div>
+          <div class="spell-pill"><strong>[E]</strong> Solaris Nova</div>
+          <div class="spell-pill"><strong>[R]</strong> Astral Mend</div>
+          <button class="spell-pill btn-hud-menu" onclick="Veyra.game.ui.openMenuTab('inventory')"><strong>[Tab]</strong> Menu &amp; Map</button>
+          <button class="spell-pill btn-hud-menu" onclick="Veyra.game.toggleFullscreen()" title="Toggle Fullscreen [F11]"><strong>⛶</strong> Fullscreen</button>
+        </div>
+      </div>
+
+      <!-- Top-Right: Combo Rank & Speedrun Timer -->
+      <div class="hud-top-right">
+        <div id="hud-speedrun-timer" class="hud-timer hidden">⏱️ 00:00.00</div>
+        <div id="hud-combo-box" class="hud-combo hidden">
+          <div id="hud-combo-rank" class="combo-rank">S</div>
+          <div id="hud-combo-hits" class="combo-hits">12 HITS</div>
+        </div>
+      </div>
+
+      <!-- Center Zone Entry Banner -->
+      <div id="zone-banner" class="zone-banner hidden">
+        <div id="zone-banner-title" class="zone-banner-title">WHISPERING CATACOMBS</div>
+        <div id="zone-banner-sub" class="zone-banner-sub">Prologue — Tomb of the Fallen Sentinel</div>
+      </div>
+
+      <!-- Bottom Boss Health Bar -->
+      <div id="hud-boss-bar" class="hud-boss-container hidden">
+        <div class="boss-title-row">
+          <span id="hud-boss-name" class="boss-name">SYLVANUS, THE MOSSBOUND WARDEN</span>
+          <span id="hud-boss-sub" class="boss-sub">Guardian of the First Eclipse Shard</span>
+        </div>
+        <div class="boss-bar-track">
+          <div id="hud-boss-fill" class="boss-bar-fill" style="width: 100%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- BUILT-IN LEVEL EDITOR TOOLBAR                                       -->
+    <!-- =================================================================== -->
+    <div id="editor-toolbar" class="editor-toolbar hidden">
+      <div class="editor-brand">🧱 World Architect</div>
+      <label>
+        Brush:
+        <select id="editor-tool-select">
+          <optgroup label="Terrain Tiles">
+            <option value="tile:1">Solid Stone</option>
+            <option value="tile:2">Moss Stone</option>
+            <option value="tile:15">Ornate Brick</option>
+            <option value="tile:16">Crystal Block</option>
+            <option value="tile:17">Iron Girder</option>
+            <option value="tile:18">Obsidian Block</option>
+            <option value="tile:3">One-Way Platform</option>
+            <option value="tile:4">Floor Spikes</option>
+            <option value="tile:6">Lava / Acid Pool</option>
+            <option value="tile:7">Crumbling Block</option>
+            <option value="tile:8">Bounce Mushroom Pad</option>
+            <option value="tile:9">Slippery Ice Floor</option>
+            <option value="tile:10">Conveyor Left</option>
+            <option value="tile:11">Conveyor Right</option>
+            <option value="tile:12">Shadow Gate</option>
+          </optgroup>
+          <optgroup label="Entities &amp; Objects">
+            <option value="enemy:crawler">Enemy: Hollow Crawler</option>
+            <option value="enemy:stalker">Enemy: Dusk Stalker</option>
+            <option value="enemy:spitter">Enemy: Spore Spitter</option>
+            <option value="enemy:drone">Enemy: Clockwork Drone</option>
+            <option value="enemy:wraith">Enemy: Frost Wraith</option>
+            <option value="enemy:assassin">Enemy: Crimson Assassin</option>
+            <option value="grapple">Astral Grapple Anchor</option>
+            <option value="chest">Treasure Chest</option>
+            <option value="spawn">Set Player Spawn</option>
+            <option value="erase">Eraser (or Right-Click)</option>
+          </optgroup>
+        </select>
+      </label>
+      <label>
+        Biome:
+        <select id="editor-biome-select">
+          <option value="catacombs">Whispering Catacombs</option>
+          <option value="haven">Haven of Dusk</option>
+          <option value="outskirts">Sunken Outskirts</option>
+          <option value="foundry">Ironhearth Foundry</option>
+          <option value="caverns">Crystal Caverns</option>
+          <option value="archive">Sunken Archive</option>
+          <option value="citadel">Obsidian Citadel</option>
+        </select>
+      </label>
+      <div class="editor-actions">
+        <button id="btn-editor-playtest" class="btn-small btn-gold">▶ Playtest</button>
+        <button id="btn-editor-save" class="btn-small btn-outline">💾 Save</button>
+        <button id="btn-editor-export" class="btn-small btn-outline">📤 Export</button>
+        <button id="btn-editor-import" class="btn-small btn-outline">📥 Import</button>
+        <button id="btn-editor-exit" class="btn-small btn-danger">Exit</button>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- INTERACTIVE DIALOGUE OVERLAY                                        -->
+    <!-- =================================================================== -->
+    <div id="dialogue-overlay" class="dialogue-backdrop hidden">
+      <div class="dialogue-box">
+        <div class="dialogue-header">
+          <div>
+            <div id="dialogue-speaker" class="dialogue-speaker">Elder Lyra</div>
+            <div id="dialogue-role" class="dialogue-role">Chronicler of the Remnant</div>
+          </div>
+        </div>
+        <p id="dialogue-text" class="dialogue-text"></p>
+        <div id="dialogue-choices" class="dialogue-choices"></div>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- CINEMATIC CUTSCENE OVERLAY                                          -->
+    <!-- =================================================================== -->
+    <div id="cutscene-overlay" class="overlay-screen cutscene-screen hidden">
+      <div class="cutscene-card">
+        <div class="cutscene-top-bar">
+          <span id="cutscene-header" class="cutscene-title">PROLOGUE</span>
+          <span id="cutscene-step" class="cutscene-step">Scene 1 / 4</span>
+        </div>
+        <canvas id="cutscene-canvas" width="760" height="310" class="cutscene-canvas"></canvas>
+        <div id="cutscene-speaker" class="cutscene-speaker">Chronicler Lyra</div>
+        <p id="cutscene-caption" class="cutscene-caption"></p>
+        <div class="cutscene-controls">
+          <button id="btn-cutscene-skip" class="btn-outline">Skip Cutscene</button>
+          <button id="btn-cutscene-next" class="btn-gold">Continue ▸</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- SANCTUARY / PAUSE MENU MODAL                                        -->
+    <!-- =================================================================== -->
+    <div id="pause-menu-modal" class="modal-backdrop hidden">
+      <div class="modal-window modal-large">
+        <div class="modal-header">
+          <div class="pause-nav-tabs">
+            <button class="tab-btn active" data-menu-tab="inventory">🗡️ Arsenal &amp; Relics</button>
+            <button class="tab-btn" data-menu-tab="skills">✨ Skill Tree</button>
+            <button class="tab-btn" data-menu-tab="forge">🔨 Forge &amp; Shop</button>
+            <button class="tab-btn" data-menu-tab="map">🗺️ Map &amp; Quests</button>
+            <button class="tab-btn" data-menu-tab="codex">📜 Lore &amp; Bestiary</button>
+            <button class="tab-btn" data-menu-tab="achievements">🏆 Achievements</button>
+            <button class="tab-btn" data-menu-tab="settings">⚙️ Settings</button>
+          </div>
+          <div class="pause-header-actions">
+            <button id="btn-resume-game" class="btn-small btn-gold">Resume</button>
+            <button id="btn-return-title" class="btn-small btn-danger">Title Screen</button>
+          </div>
+        </div>
+        <div id="pause-tab-body" class="modal-body-scroll"></div>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- CREDITS MODAL                                                       -->
+    <!-- =================================================================== -->
+    <div id="credits-modal" class="modal-backdrop hidden">
+      <div class="modal-window">
+        <div class="modal-header">
+          <h3>👑 Chronicles of Veyra: The Shattered Eclipse — Credits</h3>
+          <button class="btn-close" onclick="document.getElementById('credits-modal').classList.add('hidden')">✕</button>
+        </div>
+        <div class="credits-content">
+          <p><strong>Game Direction, Narrative &amp; Systems Architecture:</strong> Aethelgard Studios</p>
+          <p><strong>Engine &amp; Physics:</strong> Custom 60Hz Sub-Pixel 2D Platformer Engine (Coyote Time, Pogo Combat, Aegis Parry, Astral Grapple &amp; Shadow Dash)</p>
+          <p><strong>Music &amp; Sound Effects:</strong> Real-Time Multi-Channel WebAudio Synthesizer</p>
+          <p><strong>Story Acts &amp; World Building:</strong> 5 Acts, 8 Interconnected Zones, 14 Ancient Lore Tablets, 6 Interactive NPCs &amp; 3 Branching Endings</p>
+          <p class="gold-text" style="margin-top: 16px;">Thank you for playing Chronicles of Veyra!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- =================================================================== -->
+    <!-- JSON EXPORT / IMPORT MODAL                                          -->
+    <!-- =================================================================== -->
+    <div id="json-modal" class="modal-backdrop hidden">
+      <div class="modal-window">
+        <div class="modal-header">
+          <h3 id="json-modal-title">Data JSON</h3>
+          <button class="btn-close" onclick="document.getElementById('json-modal').classList.add('hidden')">✕</button>
+        </div>
+        <textarea id="json-modal-textarea" rows="10" class="json-textarea"></textarea>
+        <div style="margin-top: 12px; text-align: right;">
+          <button id="btn-json-submit" class="btn-gold">Apply JSON</button>
+          <button class="btn-outline" onclick="document.getElementById('json-modal').classList.add('hidden')">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Achievement & Notification Toasts -->
+    <div id="toast-container" class="toast-container"></div>
+  </div>
+
+  <!-- Modular Game Scripts (compatible with both file:// and http://) -->
+  <script src="src/utils.js"></script>
+  <script src="src/config.js"></script>
+  <script src="src/audio.js"></script>
+  <script src="src/story.js"></script>
+  <script src="src/particles.js"></script>
+  <script src="src/levels.js"></script>
+  <script src="src/entities.js"></script>
+  <script src="src/bosses.js"></script>
+  <script src="src/renderer.js"></script>
+  <script src="src/editor.js"></script>
+  <script src="src/ui.js"></script>
+  <script src="src/main.js"></script>
+</body>
+</html>
